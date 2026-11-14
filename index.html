@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Physical Agent: Learning Manipulation in the Native Distribution Retains Reasoning and In-Context Learning</title>
+<meta name="description" content="A 4B Physical Agent trained on four B200 GPUs. It does robot tasks, is still a general agent, and learns new tasks from context the way language agents do.">
+<meta property="og:title" content="Physical Agent: Learning Manipulation in the Native Distribution Retains Reasoning and In-Context Learning">
+<meta property="og:description" content="A 4B Physical Agent trained on four B200 GPUs: robot tasks, general capabilities, and in-context learning.">
+<meta property="og:image" content="assets/img/hero-poster.jpg">
+<link rel="icon" type="image/svg+xml" href="assets/img/ninelong.svg">
+<link rel="preload" href="assets/fonts/plus-jakarta-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="egg" viewBox="0 0 52 60">
+    <path d="M26 4.5C38.75 4.5 48.25 19.25 48.25 35.25C48.25 48.5 38.5 56.75 26 56.75C13.5 56.75 3.75 48.5 3.75 35.25C3.75 19.25 13.25 4.5 26 4.5Z" fill="#FFD43B"/>
+    <path d="M48.25 35.25C48.25 48.5 38.5 56.75 26 56.75C19 56.75 13 54 9 49.25C22 55 42 50.25 47.3 30C47.95 31.75 48.25 33.5 48.25 35.25Z" fill="#F2B90F"/>
+    <path d="M13.25 21.5C16 13.75 21.25 9.5 26.75 8.5C20.75 11.5 16.4 16.5 13.25 21.5Z" fill="#FFE98A"/>
+    <circle cx="18" cy="26.25" r="3.7" fill="#49B867"/><circle cx="34" cy="26.25" r="3.7" fill="#49B867"/>
+    <circle cx="18.5" cy="26.55" r="2.1" fill="#17150F"/><circle cx="34.5" cy="26.55" r="2.1" fill="#17150F"/>
+    <circle cx="17.6" cy="25.55" r=".7" fill="#fff"/><circle cx="33.6" cy="25.55" r=".7" fill="#fff"/>
+    <path d="M22.5 32.25q3.5 2.2 7 0" stroke="#D98A14" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  </symbol>
+  <symbol id="egg-cry" viewBox="0 0 52 60">
+    <path d="M26 4.5C38.75 4.5 48.25 19.25 48.25 35.25C48.25 48.5 38.5 56.75 26 56.75C13.5 56.75 3.75 48.5 3.75 35.25C3.75 19.25 13.25 4.5 26 4.5Z" fill="#FFD43B"/>
+    <path d="M48.25 35.25C48.25 48.5 38.5 56.75 26 56.75C19 56.75 13 54 9 49.25C22 55 42 50.25 47.3 30C47.95 31.75 48.25 33.5 48.25 35.25Z" fill="#F2B90F"/>
+    <path d="M13.25 21.5C16 13.75 21.25 9.5 26.75 8.5C20.75 11.5 16.4 16.5 13.25 21.5Z" fill="#FFE98A"/>
+    <circle cx="17.6" cy="26.6" r="4.9" fill="#49B867"/><circle cx="34.4" cy="26.6" r="4.9" fill="#49B867"/>
+    <circle cx="17.8" cy="26.9" r="3.2" fill="#17150F"/><circle cx="34.6" cy="26.9" r="3.2" fill="#17150F"/>
+    <circle cx="16.2" cy="25.1" r="1.45" fill="#fff"/><circle cx="33" cy="25.1" r="1.45" fill="#fff"/>
+    <circle cx="19.3" cy="28.3" r=".75" fill="#fff"/><circle cx="36.1" cy="28.3" r=".75" fill="#fff"/>
+    <path d="M12.9 28.6C14 31.9 21.200 31.900 22.300 28.600C20.800 30.200 14.400 30.200 12.900 28.600Z" fill="#BFE6FF"/><path d="M29.700 28.600C30.800 31.900 38 31.900 39.100 28.600C37.600 30.200 31.200 30.200 29.700 28.600Z" fill="#BFE6FF"/>
+    <path d="M22.300 35.200c1.200-1.600 2.500-1.600 3.700-.3c1.200 1.300 2.500 1.300 3.700-.3" stroke="#D98A14" stroke-width="1.700" stroke-linecap="round" fill="none"/>
+  </symbol>
+</defs></svg>
+
+<header class="top"><div class="top-in">
+  <a class="brand" href="#top"><svg><use href="#egg"/></svg>Physical Agent</a>
+  <nav aria-label="Project links"><a href="#general">General agent</a><a href="#compute">4B model on 4 GPUs</a><a href="#icl">In-context learning</a><a href="#bibtex">BibTeX</a></nav>
+</div></header>
+
+<main>
+<section class="hero" id="top">
+<div class="hero-scroll" id="hero-scroll"><div class="hero-pin" id="hero-pin">
+  <div class="stage" id="stage" aria-label="Animated replay of a real Physical Agent episode">
+    <canvas id="gl"></canvas>
+    <img class="stage-poster" src="assets/img/hero-poster.jpg" alt="" onerror="this.style.display='none'">
+    <div class="stage-load"><svg><use href="#egg"/></svg><span id="load-t">Loading the scene</span></div>
+
+    <div class="ov ov-phase" id="ov-phase"><i></i><span>Cyberspace</span></div>
+    <div class="ov ov-vig" id="ov-vig" aria-hidden="true"></div>
+    <div class="ov ov-pip hide" id="ov-obs">
+      <img id="obs-img" src="assets/episode/obs-00.jpg" alt="The two camera views the agent receives this turn">
+      <div class="ov-cap">what the agent sees this turn</div>
+    </div>
+    <div class="ov ov-sub hide" id="ov-turn" aria-live="off">
+      <div class="sub-h"><span>Turn <b id="turn-k">1</b> of 12</span><span id="turn-ph">reasoning</span></div>
+      <p class="sub-r" id="reason"></p>
+      <div class="sub-c" id="call"></div>
+    </div>
+    <div class="ov ov-sub ov-note hide" id="ov-note">
+      <div class="sub-h"><span>About this film</span></div>
+      <p><b>A real episode, replayed.</b> The 96 targets the arm follows, the reasoning and the camera views are the agent's own. The scene is restyled, and Ninelong the egg is our mascot.</p>
+    </div>
+    <div class="ov ov-done hide" id="ov-done"><i>✓</i><b>Bowl on the plate</b><span>12 turns · 96 control steps</span></div>
+    <div class="ov ov-bar">
+      <button class="pb" id="pp" aria-label="Pause"><svg viewBox="0 0 14 14"><path id="pp-i" d="M3 1h3v12H3zM8 1h3v12H8z"/></svg></button>
+      <div class="track" id="track" role="slider" aria-label="Replay position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+        <div class="track-bg"><div class="track-fill" id="track-fill"></div></div>
+      </div>
+      <button class="pb" id="rp" aria-label="Replay"><svg viewBox="0 0 14 14"><path d="M7 2a5 5 0 1 0 4.9 6h-1.6A3.5 3.5 0 1 1 7 3.5v2L10.5 3 7 .5z"/></svg></button>
+    </div>
+  </div>
+  <div class="hero-head" id="hero-head">
+    <h1><span class="mark">Physical Agent</span><span class="h1-sub">Learning Manipulation in the Native Distribution Retains Reasoning and In-Context Learning</span></h1>
+  </div>
+  <div class="scroll-hint" id="scroll-hint" aria-hidden="true">Scroll<svg viewBox="0 0 14 14"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+</div></div>
+<div class="hero-in">
+  <p class="authors"><span><a href="https://user7680251.github.io/" target="_blank" rel="noopener">Junxiao Xu</a><sup>*</sup></span><span><a href="https://jerryyan24.github.io" target="_blank" rel="noopener">Rui Yan</a><sup>*</sup></span><span><a href="https://me.gatech.edu/faculty/zhao" target="_blank" rel="noopener">Ye Zhao</a></span></p>
+  <p class="affil"><img class="gt" src="assets/img/gt-logo.svg" alt="Georgia Institute of Technology" width="196" height="44"><span><sup>*</sup>Equal contribution</span></p>
+  <p class="btns">
+    <a class="btn dark" href="#" aria-disabled="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg>Paper<span class="soon">soon</span></a>
+    <a class="btn" href="#" aria-disabled="true"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.500 5l-3 14"/></svg>Code<span class="soon">soon</span></a>
+    <a class="btn" href="#" aria-disabled="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.500v9L12 21l-8-4.500v-9zM4 7.500l8 4.500 8-4.500M12 12v9"/></svg>Model weights<span class="soon">soon</span></a>
+  </p>
+</div></section>
+
+<div class="layout">
+<aside class="toc" aria-label="Contents">
+  <p class="toc-h">Contents</p>
+  <ol>
+    <li><a href="#tldr"><span></span>TL;DR</a></li>
+    <li><a href="#method"><span>1</span>What a physical agent is</a></li>
+    <li><a href="#physical"><span>2</span>Physical skills</a></li>
+    <li><a href="#general"><span>3</span>Still a general agent</a></li>
+    <li><a href="#icl"><span>4</span>In-context learning</a></li>
+    <li><a href="#compute"><span>5</span>Four GPUs, a 4B model</a></li>
+    <li><a href="#recovery"><span>6</span>Reflection and recovery</a></li>
+    <li><a href="#limits"><span>7</span>Limitations and future directions</a></li>
+    <li><a href="#collab"><span></span>Work with us</a></li>
+    <li><a href="#bibtex"><span></span>BibTeX</a></li>
+  </ol>
+  <button class="toc-egg" id="toc-egg" type="button" aria-label="Ninelong, the mascot. Click to change its outfit."><span class="egg-fig" id="egg-fig" aria-hidden="true"></span><span class="egg-say"><b>Ninelong</b><span id="egg-line">Scroll. I'll narrate.</span></span></button>
+</aside>
+
+<div class="article">
+
+<section class="chap" id="tldr">
+  <h2>TL;DR</h2>
+  <p>We post-trained an open 4B general-purpose agent into a physical agent, <mark>on four B200 GPUs</mark> and about 1k robot demonstrations. After training it does robot tasks on par with a VLA built from the same model and data, and it is still a general agent: it keeps reasoning, keeps answering questions about images, and <b>learns new tasks from demonstrations placed in its context</b>.</p>
+  <p>On LIBERO it succeeds in 79.2% of rollouts, level with the VLA-style baseline at 80.0%, and it does better when the instruction changes (23.3% against 15.0%). Its general capabilities stay largely intact: 56.8% on MMLU-Pro against 61.8% before training, and 53.7% on MMMU against 46.8%, where the baseline scores zero on both. <b>The key result is in-context learning. Given one robot demonstration in its context and no parameter update, it succeeds more often: from 44.8% to 56.2% over 21 tasks, and from 17.1% to 31.4% on the hard ones, nearly double.</b> The VLA-style baseline cannot do this. With the same demonstration, its success falls to zero. We never trained for it; the ability is inherited from the general-purpose agent.</p>
+  <div class="pillars four reveal">
+    <a class="pillar" href="#physical"><span class="pillar-k">Robot tasks</span><p class="pillar-n">79.2<small>% LIBERO</small></p><p class="pillar-d">On par with a VLA-style baseline from the same model and data (80.0%).</p></a>
+    <a class="pillar" href="#general"><span class="pillar-k">Still a general agent</span><p class="pillar-n c-pa">56.8<small>% MMLU-Pro</small></p><p class="pillar-d">61.8% before training. The VLA-style baseline scores 0.</p></a>
+    <a class="pillar" href="#icl"><span class="pillar-k">In-context learning</span><p class="pillar-n c-pa">+11.4<small>pts</small></p><p class="pillar-d">From one demonstration in context, never trained for. The baseline falls to 0%.</p></a>
+    <a class="pillar" href="#compute"><span class="pillar-k">Four GPUs</span><p class="pillar-n">4 × B200</p><p class="pillar-d">Under 50 GPU-hours for a 4B model, from about 1k demonstrations.</p></a>
+  </div>
+</section>
+
+<section class="chap" id="method">
+  <h2><span class="num">1</span>What a physical agent is, and how it works</h2>
+  <div class="defn">
+    <span class="defn-k">Physical agent</span>
+    <p>A general-purpose agent that <b>sees</b> with its own vision, <b>reasons</b> in language, and <b>acts</b> through <i>physical tool calls</i>: native tool calls whose arguments are end-effector targets. It learns physical skills through <i>physical post-training</i>, and remains a general agent.</p>
+  </div>
+
+  <h3>Compared with a VLA and Code as Policies</h3>
+  <figure class="fig reveal" id="how">
+    <div class="fig-b">
+      <div class="lanes">
+        <div class="lane" id="lane-vla">
+          <div class="lane-h">
+            <div class="lane-n">VLA</div>
+            <div class="eq"><i>p</i><sub>θ</sub>( <i>a</i><sub>t</sub>, …, <i>a</i><sub>t+K−1</sub> | <i>I</i>, <i>o</i><sub>t</sub> )</div>
+            <div class="tks"><span class="tk y">Learns</span><span class="tk n">Native interface</span></div>
+          </div>
+          <div class="lane-s"><div class="pipe">
+            <i class="thumb" id="vla-img"></i>
+            <span class="arr">→</span>
+            <div class="mbox" id="vla-box">VLA<small>+ action head</small></div>
+            <span class="arr">→</span>
+            <div class="chunk" id="vla-chunk"><b><i>a</i><sub>t</sub></b><b><i>a</i><sub>t+1</sub></b><b>…</b><b><i>a</i><sub>t+K−1</sub></b></div>
+            <span class="arr">→</span>
+            <div class="arm" id="vla-ctl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h10M8.5 21v-4l4-7.200 5.200 2.100M17.700 11.900l2.800-2.300M17.700 11.900l1.300 3.300"/><circle cx="8.500" cy="16.800" r="1.700"/><circle cx="12.500" cy="9.800" r="1.500"/></svg></div>
+          </div></div>
+        </div>
+        <div class="lane" id="lane-cap">
+          <div class="lane-h">
+            <div class="lane-n">Code as Policies</div>
+            <div class="eq"><i>p</i><sub>LLM</sub>( code | <i>I</i>, APIs )</div>
+            <div class="tks"><span class="tk n">Learns</span><span class="tk y">Native interface</span></div>
+          </div>
+          <div class="lane-s"><div class="pipe">
+            <span class="api">detect()<br>pick()<br>place_on()</span>
+            <span class="arr">→</span>
+            <div class="mbox" id="cap-box">LLM<small>frozen</small></div>
+            <span class="arr">→</span>
+            <pre class="prog" id="cap-code"><span>bowl = detect("black bowl")</span><span>plate = detect("plate")</span><span>pick(bowl)</span><span>place_on(bowl, plate)</span></pre>
+            <span class="arr">→</span>
+            <div class="rbox" id="cap-ctl">Skill library<small id="cap-now">&nbsp;</small></div>
+            <span class="arr">→</span>
+            <div class="arm" id="cap-arm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h10M8.5 21v-4l4-7.200 5.200 2.100M17.700 11.900l2.800-2.300M17.700 11.900l1.300 3.300"/><circle cx="8.500" cy="16.800" r="1.700"/><circle cx="12.500" cy="9.800" r="1.500"/></svg></div>
+          </div></div>
+        </div>
+        <div class="lane ours wide" id="lane-pa">
+          <div class="lane-h">
+            <div class="lane-n">Physical agent</div>
+            <div class="eq"><i>p</i><sub>θ</sub>( <i>r</i><sub>t</sub>, <i>a</i><sub>t</sub> | <i>I</i>, <i>o</i><sub>1</sub>, <i>r</i><sub>1</sub>, <i>a</i><sub>1</sub>, …, <i>o</i><sub>t</sub> )</div>
+            <div class="tks"><span class="tk y">Learns</span><span class="tk y">Native interface</span></div>
+          </div>
+          <div class="lane-s"><div class="pipe">
+            <div class="conv" id="pa-conv"><div class="conv-track" id="pa-track"></div></div>
+            <span class="arr">→</span>
+            <div class="arm" id="pa-ctl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h10M8.5 21v-4l4-7.200 5.200 2.100M17.700 11.900l2.800-2.300M17.700 11.900l1.300 3.300"/><circle cx="8.500" cy="16.800" r="1.700"/><circle cx="12.500" cy="9.800" r="1.500"/></svg></div>
+          </div></div>
+        </div>
+      </div>
+      <div class="lane-ctl"><span class="lg"><i class="lg-o"></i><i>o</i> see</span><span class="lg"><i class="lg-r"></i><i>r</i> think</span><span class="lg"><i class="lg-a"></i><i>a</i> act</span><button id="how-pp" type="button">Pause</button></div>
+    </div>
+    <figcaption><b>Figure 1.</b> What the model produces, and what it conditions on. The top two lanes are schematic; some VLAs also take history. The bottom lane replays a recorded episode.</figcaption>
+  </figure>
+  <div class="lk">
+    <p><b>Like a VLA</b>, it learns from robot data. <b>Unlike a VLA</b>, its action is a native tool call rather than an added action head, so reasoning, history and in-context learning carry over.</p>
+    <p><b>Like Code as Policies</b>, it acts in the model's native interface. <b>Unlike Code as Policies</b>, the model is trained, and it perceives and controls by itself instead of calling perception APIs and a skill library.</p>
+  </div>
+  <p class="note">Code as Policies: Liang et al., 2023. VLA examples: OpenVLA (Kim et al., 2024) and π0.5 (Black et al., 2025).</p>
+
+  <h3>The agent loop</h3>
+  <p>The instruction is given once. In each turn the agent receives two camera views, writes a short reasoning paragraph and one tool call, and gets back a tool response that only says the call ran. Whether a grasp held, or the task is done, it has to judge from the next views.</p>
+  <figure class="fig reveal" id="tx">
+    <div class="fig-b"><div class="tx">
+      <div class="tx-in">
+        <p class="fig-t">The agent receives</p>
+        <div><div class="role" style="--c:#737b87"><i></i>User, once at the start</div><div class="bubble" id="tx-inst">pick up the black bowl between the plate and the ramekin and place it on the plate</div></div>
+        <div><div class="role" style="--c:#737b87"><i></i><span id="tx-turn">Observation · turn 1 of 12</span></div><div class="tx-obs"><img id="tx-img" src="assets/episode/obs-00.jpg" alt="Agent view and wrist view for the selected turn"><span class="tx-obs-l">agent view</span><span class="tx-obs-r">wrist view</span></div></div>
+        <div class="tx-steps" id="tx-steps" role="tablist" aria-label="Turns"></div>
+        <div class="tx-ctl"><button id="tx-prev" type="button" aria-label="Previous turn">←</button><button id="tx-play" type="button">Play</button><button id="tx-next" type="button" aria-label="Next turn">→</button><p class="tx-meta" id="tx-meta"></p></div>
+      </div>
+      <div class="tx-side" id="tx-side">
+        <p class="fig-t">The agent writes</p>
+        <div><div class="role" style="--c:var(--pa)"><i></i>Agent reasoning</div><div class="bubble think" id="tx-reason"></div></div>
+        <div><div class="role" style="--c:var(--egg-deep)"><i></i>Agent tool call</div><div class="tx-call"><pre class="code" id="tx-call"></pre><div class="tx-traj" id="tx-traj"></div></div></div>
+      </div>
+      <div class="tx-fbw" id="tx-fbw"><div class="role" style="--c:var(--good)"><i></i>Tool response, then the next views</div><div class="bubble fb" id="tx-fb"></div></div>
+    </div></div>
+    <figcaption><b>Figure 2.</b> The 12 turns of the episode shown at the top of the page. The text is the model's verbatim output. Each tool call carries eight targets; the code shows the first and the chart plots all eight.</figcaption>
+  </figure>
+
+  <h3>Physical post-training</h3>
+  <div class="pp reveal">
+    <div><small>Data</small><b>Demonstrations to agent interactions</b><p>About 1k demonstrations become 21,267 decisions. Each is a tool call of up to eight targets, with reasoning added by a teacher model.</p></div>
+    <span class="pp-ar" aria-hidden="true">→</span>
+    <div><small>Stage 1 · 16 epochs</small><b>Single-turn training</b><p>Instruction and current views in, reasoning and tool call out.</p></div>
+    <span class="pp-ar" aria-hidden="true">→</span>
+    <div><small>Stage 2 · 2 epochs</small><b>History-conditioned training</b><p>Whole conversations, so each decision also sees the earlier turns.</p></div>
+  </div>
+  <p class="note">All parameters are updated, including the vision encoder, with next-token cross-entropy.</p>
+</section>
+
+<section class="chap" id="physical">
+  <h2><span class="num">2</span>Learning physical skills from a general-purpose agent</h2>
+  <p class="lead">Physical Agent performs close to the Qwen4B-OFT baseline on the original tasks, and better under task and position perturbations.</p>
+  <p><b>Qwen4B-OFT</b> is the baseline: the same Qwen3.5-4B and the same 1k demonstrations, with a continuous action head instead of tool calls.</p>
+  <figure class="fig reveal" id="f3">
+    <div class="fig-b">
+      <div class="g3-top"><p class="fig-t">Success rate (%)</p><div class="legend"><span><i style="--c:var(--oft)"></i>Qwen4B-OFT</span><span><i style="--c:var(--pa)"></i>Physical Agent</span></div></div>
+      <div class="g6-plot g3-plot" style="--max:100"><div class="g6-y" aria-hidden="true"><span style="--t:0">0</span><span style="--t:25">25</span><span style="--t:50">50</span><span style="--t:75">75</span><span style="--t:100">100</span></div><div class="g3-g"><div class="g6-c" tabindex="0" style="--c:var(--oft)" data-tip="Qwen4B-OFT · 96 of 120" aria-label="Qwen4B-OFT, Original: 80.0%, 96 of 120 rollouts"><div class="g6-bar" style="--v:80.00;--i:0"><b>80.0</b></div></div><div class="g6-c" tabindex="0" style="--c:var(--pa)" data-tip="Physical Agent · 95 of 120" aria-label="Physical Agent, Original: 79.2%, 95 of 120 rollouts"><div class="g6-bar" style="--v:79.17;--i:1"><b>79.2</b><em class="z">−0.8</em></div></div></div><div class="g3-g"><div class="g6-c" tabindex="0" style="--c:var(--oft)" data-tip="Qwen4B-OFT · 18 of 120" aria-label="Qwen4B-OFT, Task perturbation: 15.0%, 18 of 120 rollouts"><div class="g6-bar" style="--v:15.00;--i:2"><b>15.0</b></div></div><div class="g6-c" tabindex="0" style="--c:var(--pa)" data-tip="Physical Agent · 28 of 120" aria-label="Physical Agent, Task perturbation: 23.3%, 28 of 120 rollouts"><div class="g6-bar" style="--v:23.33;--i:3"><b>23.3</b><em>+8.3</em></div></div></div><div class="g3-g"><div class="g6-c" tabindex="0" style="--c:var(--oft)" data-tip="Qwen4B-OFT · 0 of 120" aria-label="Qwen4B-OFT, Position perturbation: 0.0%, 0 of 120 rollouts"><div class="g6-bar" style="--v:0.00;--i:4"><b>0.0</b></div></div><div class="g6-c" tabindex="0" style="--c:var(--pa)" data-tip="Physical Agent · 7 of 120" aria-label="Physical Agent, Position perturbation: 5.8%, 7 of 120 rollouts"><div class="g6-bar" style="--v:5.83;--i:5"><b>5.8</b><em>+5.8</em></div></div></div></div>
+      <div class="g3-cards">
+        <div class="g3-card"><div class="g3-img" style="background-image:url(assets/img/pert-original.jpg)" role="img" aria-label="A LIBERO-Object scene as trained"><span>“pick up the cream cheese …”</span></div><b>Original</b><small>as trained</small></div>
+        <div class="g3-card"><div class="g3-img" style="background-image:url(assets/img/pert-task.jpg)" role="img" aria-label="The same scene with a new instruction"><span>“pick the <mark>alphabet soup</mark> …”</span></div><b>Task perturbation</b><small>same scene, new instruction</small></div>
+        <div class="g3-card"><div class="g3-img" style="background-image:url(assets/img/pert-position.jpg)" role="img" aria-label="The same instruction with objects rearranged"><span>“pick up the cream cheese …”</span></div><b>Position perturbation</b><small>same instruction, objects moved</small></div>
+      </div>
+    </div>
+    <figcaption><b>Figure 3.</b> Average success rate over 120 rollouts per bar. Perturbations are from LIBERO-PRO; the images show one LIBERO-Object scene under each condition.</figcaption>
+  </figure>
+  <div class="tbl-wrap"><table class="t3">
+    <tr><th></th><th colspan="2">Original</th><th class="sep" colspan="2">Task perturbation</th><th class="sep" colspan="2">Position perturbation</th></tr>
+    <tr class="sub"><th>Suite</th><th><span class="l">Qwen4B-OFT</span><span class="s">OFT</span></th><th class="us"><span class="l">Physical Agent</span><span class="s">Ours</span></th><th class="sep"><span class="l">Qwen4B-OFT</span><span class="s">OFT</span></th><th class="us"><span class="l">Physical Agent</span><span class="s">Ours</span></th><th class="sep"><span class="l">Qwen4B-OFT</span><span class="s">OFT</span></th><th class="us"><span class="l">Physical Agent</span><span class="s">Ours</span></th></tr>
+    <tr><td>Spatial</td><td class="">76.7</td><td class="us best">83.3</td><td class="sep best">40.0</td><td class="us best">40.0</td><td class="sep ">0.0</td><td class="us best">13.3</td></tr>
+    <tr><td>Object</td><td class="best">100.0</td><td class="us best">100.0</td><td class="sep best">10.0</td><td class="us best">10.0</td><td class="sep ">0.0</td><td class="us best">3.3</td></tr>
+    <tr><td>Goal</td><td class="best">80.0</td><td class="us">73.3</td><td class="sep ">3.3</td><td class="us best">23.3</td><td class="sep ">0.0</td><td class="us best">6.7</td></tr>
+    <tr><td>Long</td><td class="best">63.3</td><td class="us">60.0</td><td class="sep ">6.7</td><td class="us best">20.0</td><td class="sep best">0.0</td><td class="us best">0.0</td></tr>
+    <tr class="avg"><td>Average</td><td class="best">80.0</td><td class="us">79.2</td><td class="sep ">15.0</td><td class="us best">23.3</td><td class="sep ">0.0</td><td class="us best">5.8</td></tr>
+    <tr class="grp"><td colspan="7">Published averages reported by LIBERO-PRO, for context only</td></tr>
+    <tr class="ref"><td>π0 (3B)</td><td colspan="2">92.3</td><td class="sep" colspan="2">0.0</td><td class="sep" colspan="2">0.0</td></tr>
+    <tr class="ref"><td>π0.5 (3B)</td><td colspan="2">96.5</td><td class="sep" colspan="2">0.8</td><td class="sep" colspan="2">20.8</td></tr>
+  </table></div>
+  <p>On the original tasks the two are within one point. Under task perturbation, Physical Agent reaches 23.3% against 15.0%, with the gains in Goal and Long. Position perturbation remains hard for both.</p>
+</section>
+
+<section class="chap" id="general">
+  <h2><span class="num">3</span>Still a general agent</h2>
+  <p class="lead">Two models with the same manipulation score end up very different as general models.</p>
+  <figure class="fig reveal">
+    <div class="fig-b">
+      <div class="legend"><span><i style="--c:#aeb4bd"></i>Original Qwen3.5-4B</span><span><i style="--c:var(--pa)"></i>Physical Agent</span><span><i style="--c:var(--oft)"></i>Qwen4B-OFT</span></div>
+      <div class="bars" style="--h:230px">
+        <div class="bgroup"><div class="bar" style="--v:61.79;--c:#aeb4bd;--i:0"><b>61.8</b></div><div class="bar" style="--v:56.79;--c:var(--pa);--i:1"><b>56.8</b></div><div class="bar zero" style="--v:0;--c:var(--oft);--i:2"><b>0.0</b></div></div>
+        <div class="bgroup"><div class="bar" style="--v:46.78;--c:#aeb4bd;--i:3"><b>46.8</b></div><div class="bar" style="--v:53.67;--c:var(--pa);--i:4"><b>53.7</b></div><div class="bar zero" style="--v:0;--c:var(--oft);--i:5"><b>0.0</b></div></div>
+        <div class="bgroup"><div class="bar" style="--v:13.33;--c:#aeb4bd;--i:6"><b>13.3</b></div><div class="bar" style="--v:20;--c:var(--pa);--i:7"><b>20.0</b></div><div class="bar zero" style="--v:0;--c:var(--oft);--i:8"><b>0.0</b></div></div>
+      </div>
+      <div class="blabels"><div>MMLU-Pro<small>280 questions</small></div><div>MMMU<small>900 questions</small></div><div>AIME<small>30 questions, one sample</small></div></div>
+    </div>
+    <figcaption><b>Figure 4.</b> Accuracy (%) before and after physical post-training. Unparsed answers count as wrong. The OFT MMLU-Pro entry is derived from an existing 16K-token run. AIME is a single sample per question and several answers are unresolved, so treat it as indicative.</figcaption>
+  </figure>
+  <p>Physical Agent updates every parameter on robot data, with no general-data co-training and no frozen modules, and still answers general questions: 56.8% on MMLU-Pro, down five points from the original model. The action-head model, which keeps its language head, produces no parseable correct answers.</p>
+</section>
+
+<section class="chap" id="icl">
+  <h2><span class="num">4</span>In-context learning</h2>
+  <p class="lead">Language agents pick up a new task from an example in the prompt. We study whether a physical agent can do the same, and find that it can.</p>
+  <p>Show the agent one demonstration of a task it has not been trained on, and it succeeds more often. We never trained it to do this.</p>
+  <p>We test on LIBERO-PRO task perturbations, with no parameter updates. A <b>task demo</b> shows the evaluated task from another initial state; a <b>distractor demo</b> shows a different task in the same scene.</p>
+
+  <figure class="fig reveal" id="cxf" data-m="1">
+    <div class="fig-b">
+      <div class="cx-top">
+        <p class="fig-t">What goes into the first turn</p>
+        <div class="cx-tog" id="cx-tog" role="tablist" aria-label="Context"><button type="button" role="tab" data-m="0">No demo<small>728 tokens</small></button><button type="button" role="tab" data-m="1" class="on">With a demo<small>2,685 tokens</small></button></div>
+      </div>
+      <div class="cx">
+        <div class="cx-b sys"><small>system</small><span class="cx-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="cx-chip">tool schema</span></div>
+        <div class="cx-b demo"><small><span class="y">in-context demonstration</span><span class="n">no demonstration</span></small><div class="cx-pairs"><div class="cx-p" style="--i:0"><img src="assets/img/t74-i43-related-demo0.jpg" alt="Demonstration observation 1: scene view and wrist view"><span class="cx-chip a">tool call<em>8 targets</em></span></div><div class="cx-p" style="--i:1"><img src="assets/img/t74-i43-related-demo1.jpg" alt="Demonstration observation 2: scene view and wrist view"><span class="cx-chip a">tool call<em>8 targets</em></span></div><div class="cx-p" style="--i:2"><img src="assets/img/t74-i43-related-demo2.jpg" alt="Demonstration observation 3: scene view and wrist view"><span class="cx-chip a">tool call<em>8 targets</em></span></div></div></div>
+        <div class="cx-b cur"><small>user</small><img src="assets/img/t74-i43-related-first.jpg" alt="Current observation: scene view and wrist view"><span class="cx-chip q">“put the wine bottle in the bowl”</span></div>
+        <span class="cx-ar" aria-hidden="true">→</span>
+        <div class="cx-b me"><small>agent</small><span class="cx-chip r">reasoning</span><span class="cx-chip a">tool call<em>8 targets</em></span></div>
+      </div>
+    </div>
+    <figcaption><b>Figure 5.</b> A demonstration is three observations, each followed by the eight targets the expert executed, placed before the current observation.</figcaption>
+  </figure>
+
+  <figure class="fig reveal" id="f6">
+    <div class="fig-b">
+      <p class="fig-t">Success rate (%)</p>
+      <div class="g6">
+        <div class="g6-p">
+          <p class="g6-h">All 21 tasks<small>105 rollouts per bar</small></p>
+          <div class="g6-plot"><div class="g6-y" aria-hidden="true"><span style="--t:0">0</span><span style="--t:20">20</span><span style="--t:40">40</span><span style="--t:60">60</span></div><div class="g6-g" style="--b:44.76"><div class="g6-c" tabindex="0" data-tip="Physical Agent · no demo · 47 of 105" aria-label="Physical Agent, no demo: 44.8%, 47 of 105 rollouts"><div class="g6-bar" style="--v:44.76;--i:0"><b>44.8</b></div><span>no<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Physical Agent · task demo · 59 of 105" aria-label="Physical Agent, task demo: 56.2%, 59 of 105 rollouts"><div class="g6-bar" style="--v:56.19;--i:1"><b>56.2</b><em>+11.4</em></div><span>task<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Physical Agent · distractor demo · 38 of 105" aria-label="Physical Agent, distractor demo: 36.2%, 38 of 105 rollouts"><div class="g6-bar" style="--v:36.19;--i:2"><b>36.2</b></div><span>distractor<br>demo</span></div><p><i></i>Physical Agent</p></div><div class="g6-g oft" style="--b:31.43"><div class="g6-c" tabindex="0" data-tip="Qwen4B-OFT · no demo · 33 of 105" aria-label="Qwen4B-OFT, no demo: 31.4%, 33 of 105 rollouts"><div class="g6-bar" style="--v:31.43;--i:3"><b>31.4</b></div><span>no<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Qwen4B-OFT · task demo · 0 of 105" aria-label="Qwen4B-OFT, task demo: 0.0%, 0 of 105 rollouts"><div class="g6-bar zero" style="--v:0.00;--i:4"><b>0.0</b></div><span>task<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Qwen4B-OFT · distractor demo · 1 of 105" aria-label="Qwen4B-OFT, distractor demo: 0.9%, 1 of 105 rollouts"><div class="g6-bar" style="--v:0.95;--i:5"><b>1.0</b></div><span>distractor<br>demo</span></div><p><i></i>Qwen4B-OFT</p></div></div>
+        </div>
+        <div class="g6-p">
+          <p class="g6-h">Hard 7 tasks<small>35 rollouts per bar</small></p>
+          <div class="g6-plot"><div class="g6-y" aria-hidden="true"><span style="--t:0">0</span><span style="--t:20">20</span><span style="--t:40">40</span><span style="--t:60">60</span></div><div class="g6-g" style="--b:17.14"><div class="g6-c" tabindex="0" data-tip="Physical Agent · no demo · 6 of 35" aria-label="Physical Agent, no demo: 17.1%, 6 of 35 rollouts"><div class="g6-bar" style="--v:17.14;--i:0"><b>17.1</b></div><span>no<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Physical Agent · task demo · 11 of 35" aria-label="Physical Agent, task demo: 31.4%, 11 of 35 rollouts"><div class="g6-bar" style="--v:31.43;--i:1"><b>31.4</b><em>+14.3</em></div><span>task<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Physical Agent · distractor demo · 5 of 35" aria-label="Physical Agent, distractor demo: 14.3%, 5 of 35 rollouts"><div class="g6-bar" style="--v:14.29;--i:2"><b>14.3</b></div><span>distractor<br>demo</span></div><p><i></i>Physical Agent</p></div><div class="g6-g oft" style="--b:2.86"><div class="g6-c" tabindex="0" data-tip="Qwen4B-OFT · no demo · 1 of 35" aria-label="Qwen4B-OFT, no demo: 2.9%, 1 of 35 rollouts"><div class="g6-bar" style="--v:2.86;--i:3"><b>2.9</b></div><span>no<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Qwen4B-OFT · task demo · 0 of 35" aria-label="Qwen4B-OFT, task demo: 0.0%, 0 of 35 rollouts"><div class="g6-bar zero" style="--v:0.00;--i:4"><b>0.0</b></div><span>task<br>demo</span></div><div class="g6-c" tabindex="0" data-tip="Qwen4B-OFT · distractor demo · 0 of 35" aria-label="Qwen4B-OFT, distractor demo: 0.0%, 0 of 35 rollouts"><div class="g6-bar zero" style="--v:0.00;--i:5"><b>0.0</b></div><span>distractor<br>demo</span></div><p><i></i>Qwen4B-OFT</p></div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Figure 6.</b> Success rate with and without an in-context demonstration. The dashed line marks each model's no-demo level. Both models start from the same Qwen3.5-4B and the same 1k training demonstrations.</figcaption>
+  </figure>
+
+  <p><b>A task demo helps and a distractor demo hurts.</b> Across all 21 tasks a task demo raises success from 44.8% to 56.2%. A distractor demo lowers it to 36.2%. That 20-point gap between the two shows the agent is reading what the demonstration does, not just benefiting from more context. On the hard subset, a task demo nearly doubles success, from 17.1% to 31.4%.</p>
+  <p><b>The action-head model cannot act with the longer context at all.</b> Qwen4B-OFT solves 31.4% of the tasks with no demonstration and essentially none with either kind. It was trained only on current observations; Physical Agent was trained to act on its own history, and a demonstration is just more history in the same format.</p>
+
+  <figure class="fig reveal" id="f7">
+    <div class="fig-b"><div class="cases">
+      <div class="case">
+        <p class="case-h">“put the wine bottle in the bowl”</p>
+        <div class="case-pair"><div><div class="shot"><img src="assets/img/t74-i43-zero-last.jpg" alt="Final views without a demonstration" loading="lazy"><span>no demo</span></div><p class="sc"><span class="tri" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>0 / 5</b><em>never grasps the bottle</em></p></div><div><div class="shot"><img src="assets/img/t74-i43-related-last.jpg" alt="Final views with a task demonstration" loading="lazy"><span>task demo</span></div><p class="sc"><span class="tri" aria-hidden="true"><i class="y"></i><i class="y"></i><i class="y"></i><i></i><i></i></span><b>3 / 5</b><em>bottle in the bowl</em></p></div></div>
+      </div>
+      <div class="case">
+        <p class="case-h">“pick the alphabet soup and place it in the basket”</p>
+        <div class="case-pair"><div><div class="shot"><img src="assets/img/t57-i23-unrelated-last.jpg" alt="Final views with a distractor demonstration" loading="lazy"><span>distractor demo</span></div><p class="sc"><span class="tri" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>0 / 5</b><em>reaches for the cream cheese</em></p></div><div><div class="shot"><img src="assets/img/t57-i23-related-last.jpg" alt="Final views with a task demonstration" loading="lazy"><span>task demo</span></div><p class="sc"><span class="tri" aria-hidden="true"><i class="y"></i><i class="y"></i><i class="y"></i><i class="y"></i><i class="y"></i></span><b>5 / 5</b><em>soup in the basket</em></p></div></div>
+      </div>
+    </div></div>
+    <figcaption><b>Figure 7.</b> Final observations (scene view left, wrist view right) and successes out of five trials.</figcaption>
+  </figure>
+</section>
+
+<section class="chap" id="compute">
+  <h2><span class="num">5</span>Four GPUs, a 4B model</h2>
+  <p class="lead">We fine-tune a 4B model on four B200 GPUs, in under 50 GPU-hours.</p>
+  <figure class="fig reveal">
+    <div class="fig-b">
+      <div class="big-x"><b>~1,000×</b><span>fewer training GPU-hours than PEAR, a physical-agent-like model.</span></div>
+      <div class="hbars">
+        <div class="hrow"><div class="hrow-l">Robot-Use RL (PEAR)<small>27B · RL in simulation · no demos</small></div><div class="htrack"><div class="hfill" style="--v:78.3;--c:#b9bec7"></div><span class="hval" style="--v:78.3">≈ 50,000</span></div></div>
+        <div class="hrow"><div class="hrow-l c-pa">Physical Agent<small>4B · two-stage SFT · 1k demos</small></div><div class="htrack"><div class="hfill" style="--v:28.3;--c:var(--pa)"></div><span class="hval c-pa" style="--v:28.3">&lt; 50</span></div></div>
+        <div class="haxis"><div></div><div><span>1</span><span>10</span><span>100</span><span>1k</span><span>10k</span><span>100k</span><span>1M</span></div></div>
+      </div>
+    </div>
+    <figcaption><b>Figure 8.</b> Training compute in GPU-hours, log scale. Ours is on four B200 GPUs; PEAR's is in H100-equivalent hours as reported by its authors, so read the ratio as an order of magnitude.</figcaption>
+  </figure>
+  <div class="tbl-wrap"><table>
+    <tr><th></th><th>Physical Agent</th><th>Robot-Use RL (PEAR)</th></tr>
+    <tr><td>Starting model</td><td>Qwen3.5-4B</td><td>Qwen3.8-27B</td></tr>
+    <tr><td>Supervision</td><td>About 1k demonstrations</td><td>Task success only</td></tr>
+    <tr><td>Training</td><td>16 + 2 epochs of SFT</td><td>340 RL steps</td></tr>
+    <tr><td>Hardware</td><td>4 GPUs</td><td>H100, H200 and GB300 nodes</td></tr>
+    <tr><td>GPU-hours</td><td>&lt; 50</td><td>≈ 50,000</td></tr>
+    <tr><td>LIBERO</td><td>79.2% <small>120 rollouts</small></td><td>74.4% <small>2,000 episodes</small></td></tr>
+    <tr><td>LIBERO-PRO, task perturbation</td><td>23.3%</td><td>57.4%</td></tr>
+    <tr><td>Real robot</td><td>Not evaluated</td><td>60% of 30 trials</td></tr>
+  </table></div>
+  <p class="note">PEAR numbers are quoted from its project page; evaluation protocols differ.</p>
+</section>
+
+<section class="chap" id="recovery">
+  <h2><span class="num">6</span>Reflection and recovery from execution errors</h2>
+  <p class="lead">Every demonstration it learned from is a success. Nobody showed it a failed grasp, or what to do after one. In natural rollouts it still recovers from some of its own grasp failures.</p>
+
+  <figure class="fig reveal" id="rcv">
+    <div class="fig-b">
+      <div class="rv-top">
+        <p class="fig-t">Three natural rollouts</p>
+        <div class="rv-tabs" id="rv-tabs" role="tablist" aria-label="Rollout"></div>
+        <button class="rv-re" id="rv-re" type="button"><span aria-hidden="true">↻</span>Replay</button>
+      </div>
+      <div class="rv">
+        <div class="rv-l">
+          <div class="rv-view" id="rv-view">
+            <img class="on" src="assets/img/rcv-ketchup-1.jpg" alt="The gripper closes on a ketchup bottle">
+            <img src="assets/img/rcv-ketchup-2.jpg" alt="The gripper has lifted and the bottle is still on the floor" loading="lazy">
+            <img src="assets/img/rcv-ketchup-3.jpg" alt="The gripper lowers onto the bottle again" loading="lazy">
+            <img src="assets/img/rcv-ketchup-4.jpg" alt="The bottle is lifted with the gripper" loading="lazy">
+            <span class="rv-box" id="rv-box"></span>
+            <span class="rv-chip" id="rv-chip"><b>1</b>Attempt</span>
+          </div>
+          <div class="rv-strip" id="rv-strip"></div>
+        </div>
+        <ol class="rv-steps" id="rv-steps">
+          <li class="on"><span class="rv-num">1</span><div><p class="rv-h"><b>Attempt</b><small>close and test the lift</small></p><p class="rv-tx">Closes on the bottle and lifts.</p></div></li>
+          <li class="bad"><span class="rv-num">2</span><div><p class="rv-h"><b>Mismatch</b><small>model reflection</small></p><p class="rv-tx q">“The previous lift did not give me confirmed grasp evidence …”</p></div></li>
+          <li><span class="rv-num">3</span><div><p class="rv-h"><b>Correct</b><small>corrective action</small></p><p class="rv-tx q">“I open the fingers and lower back toward the target to re-establish a better alignment.”</p></div></li>
+          <li class="ok"><span class="rv-num">4</span><div><p class="rv-h"><b>Verify</b><small>object follows the gripper</small></p><p class="rv-tx">The bottle lifts with the gripper.</p></div></li>
+        </ol>
+      </div>
+    </div>
+    <div class="rv-n">
+      <div class="un"><p class="un-t"><b>15 of 80</b> rollouts had a failed grasp.</p><div class="un-g"><div title="8 of 15: the agent ends up holding the same object again"><span class="dots" style="--c:var(--good)"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i><i style="--k:5"></i><i style="--k:6"></i><i style="--k:7"></i></span><small><b>8</b> recovered</small></div><div title="5 of 15: the object is not regained"><span class="dots" style="--c:#5b6472"><i style="--k:8"></i><i style="--k:9"></i><i style="--k:10"></i><i style="--k:11"></i><i style="--k:12"></i></span><small><b>5</b> not recovered</small></div><div title="2 of 15: the outcome could not be determined"><span class="dots hollow" style="--c:#5b6472"><i style="--k:13"></i><i style="--k:14"></i></span><small><b>2</b> unresolved</small></div></div></div>
+      <div class="un"><p class="un-t"><b>Reflection</b> after the first failure, in 14 of them.</p><div class="un-g"><div title="2 of 14: the reasoning says the grasp or carry failed"><span class="dots" style="--c:#33246b"><i style="--k:0"></i><i style="--k:1"></i></span><small><b>2</b> explicit recognition</small></div><div title="8 of 14: the reasoning says it is not sure the object is held"><span class="dots" style="--c:var(--pa)"><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i><i style="--k:5"></i><i style="--k:6"></i><i style="--k:7"></i><i style="--k:8"></i><i style="--k:9"></i></span><small><b>8</b> expressed uncertainty</small></div><div title="4 of 14: no recognition in the reasoning"><span class="dots" style="--c:#b3a4e2"><i style="--k:10"></i><i style="--k:11"></i><i style="--k:12"></i><i style="--k:13"></i></span><small><b>4</b> no recognition</small></div></div></div>
+    </div>
+    <figcaption><b>Figure 9.</b> Three natural rollouts in which Physical Agent recovers from a failed grasp. Quotes are its own reasoning; frames are re-rendered from a closer camera.</figcaption>
+  </figure>
+</section>
+
+<section class="chap" id="limits">
+  <h2><span class="num">7</span>Limitations and future directions</h2>
+  <p class="lead">This is a first version, trained on four GPUs. Here is where it stands today and where we are taking it next.</p>
+  <div class="nx reveal">
+    <div><small>Embodiment</small><b>Real-robot deployment</b><dl><dt>Now</dt><dd>LIBERO and LIBERO-PRO in simulation, with one Franka arm.</dd><dt class="n">Next</dt><dd class="n">Real hardware and more embodiments, behind the same tool call.</dd></dl></div>
+    <div><small>Scale</small><b>Large-scale reinforcement learning</b><dl><dt>Now</dt><dd>About 1k successful demonstrations and no practice of its own. Perturbed tasks reach 23.3% and shifted positions 5.8%.</dd><dt class="n">Next</dt><dd class="n">Large-scale reinforcement learning on the agent's own rollouts.</dd></dl></div>
+    <div><small>Context</small><b>In-context learning</b><dl><dt>Now</dt><dd>One demonstration in the prompt lifts success from 44.8% to 56.2%, with no parameter update.</dd><dt class="n">Next</dt><dd class="n"><ul>
+      <li><b>Context to start RL.</b> Where the zero-shot success rate is zero, reinforcement learning has no signal. A demonstration in context can make it non-zero, and then RL can begin.</li>
+      <li><b>On-policy self-distillation (OPD).</b> The agent with a demonstration in context teaches the same agent without one, on its own rollouts, so what context unlocks ends up in the weights.</li>
+    </ul></dd></dl></div>
+    <div><small>Efficiency</small><b>Inference speed and reasoning efficiency</b><dl><dt>Now</dt><dd>Every turn writes a paragraph of reasoning and eight targets, one token at a time, which is slower than real-time control.</dd><dt class="n">Next</dt><dd class="n"><ul>
+      <li><b>Multi-token prediction.</b> Predict several action tokens in one step instead of one at a time.</li>
+      <li><b>Efficient thinking.</b> It reasons more than it needs to today. Think only when the situation calls for it.</li>
+      <li><b>Epistemic reasoning.</b> Sometimes act first. Test a guess with an action instead of speculating in text, and update beliefs from what happens.</li>
+    </ul></dd></dl></div>
+  </div>
+</section>
+
+<section class="chap" id="collab">
+  <h2>Work with us</h2>
+  <p class="lead">Everything on this page was trained on four GPUs. The next step needs many more.</p>
+  <p>We want to take physical agents from supervised post-training to large-scale reinforcement learning, where the agent improves from its own experience instead of demonstrations. That takes far more compute than we have today: we are short on GPUs.</p>
+  <div class="collab">
+    <svg aria-hidden="true"><use href="#egg-cry"/></svg>
+    <div>
+      <p><b>We are looking for collaborators.</b> If your lab is at a U.S. university and you work on robot learning, agents or large-scale RL, or you have GPU capacity to put behind this direction, we would like to hear from you.</p>
+      <p class="collab-c" id="collab-contact">Contact: <a href="mailto:ryan91@gatech.edu">ryan91@gatech.edu</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="chap" id="bibtex">
+  <h2>BibTeX</h2>
+<pre class="bib" id="bib">@misc{xu2026physicalagent,
+  title        = {{Physical Agent}: Learning Manipulation in the Native Distribution
+                  Retains Reasoning and In-Context Learning},
+  author       = {Xu, Junxiao and Yan, Rui and Zhao, Ye},
+  year         = {2026},
+  howpublished = {\url{<span id="bib-url">the address of this page</span>}},
+  note         = {Project website}
+}</pre>
+  <button class="copy" id="copy-bib">Copy</button>
+</section>
+
+</div>
+</div>
+</main>
+
+<footer>
+  <svg><use href="#egg"/></svg>
+  <span>Ninelong is an original mascot of this project.</span>
+  <span>Simulation scenes from LIBERO and LIBERO-PRO. Page design and animation by the authors.</span>
+</footer>
+
+<script type="module" src="assets/js/hero.js"></script>
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>
