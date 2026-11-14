@@ -16,9 +16,11 @@
   };
   const heroLayout = () => {
     pinned = mq.matches; hs.classList.toggle('pinned', pinned); stage.dataset.full = pinned ? '1' : '';
-    if (!pinned) { for (const k of ['width', 'height', 'left', 'top', 'borderRadius']) stage.style[k] = ''; head.style.opacity = ''; head.style.transform = ''; head.style.top = ''; topbar.classList.remove('away'); window.dispatchEvent(new Event('hero-layout')); return; }
+    if (!pinned) { for (const k of ['width', 'height', 'left', 'top', 'borderRadius']) stage.style[k] = ''; head.style.opacity = ''; head.style.transform = ''; head.style.top = ''; hs.style.marginBottom = ''; topbar.classList.remove('away'); window.dispatchEvent(new Event('hero-layout')); return; }
     vw = document.documentElement.clientWidth; vh = window.innerHeight; top1 = 74;
     s1 = Math.min(Math.min(1240, vw - 40) / vw, (vh - top1 - 20 - head.offsetHeight - 4) / vh); len = Math.round(vh * 0.85); hs.style.setProperty('--len', len + 'px');
+    // on a large window the settled film is limited by the column width, not the height, which leaves empty space under the title inside the pinned screen: pull the next block up by that much
+    hs.style.marginBottom = -Math.max(0, Math.round(vh - (top1 + vh * s1 + 20 + head.offsetHeight) - 4)) + 'px';
     heroUpdate(); window.dispatchEvent(new Event('hero-layout'));
   };
   heroLayout(); window.addEventListener('resize', heroLayout); mq.addEventListener('change', heroLayout);
