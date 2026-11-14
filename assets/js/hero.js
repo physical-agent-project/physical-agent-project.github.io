@@ -17,8 +17,7 @@ const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 
 // ---------- timeline (seconds) ----------
-const T_UP0 = 1.7, T_UP1 = 4.2, T_TASK = 5.3, T_DIVE0 = T_TASK + 0.35, T_DIVE1 = T_TASK + 1.7, T_GLANCE = 7.1, T_JUMP = 8.0, T_CROSS = T_JUMP + 0.5, T_LAND = T_CROSS + 1.55;
-const T_TURNS = T_LAND + 1.05, THINK = 0.72, EXEC = 0.82, TURN = THINK + EXEC, CALL_AT = 0.6;
+import { T_UP0, T_UP1, T_TASK, T_DIVE0, T_DIVE1, T_GLANCE, T_JUMP, T_CROSS, T_LAND, T_TURNS, THINK, EXEC, TURN, CALL_AT, makeOverlay } from './timeline.js';
 let N_TURNS = 12, T_END = T_TURNS + N_TURNS * TURN, T_LOOP = T_END + 6.5;
 
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -485,42 +484,15 @@ async function main() {
   };
 
   // ---------- DOM overlays ----------
-  const el = { vig: $('ov-vig'), note: $('ov-note'), phase: $('ov-phase'), obs: $('ov-obs'), turn: $('ov-turn'), done: $('ov-done'), obsImg: $('obs-img'), k: $('turn-k'), ph: $('turn-ph'), reason: $('reason'), call: $('call'), fill: $('track-fill'), track: $('track') };
-  const callHTML = ep.turns.map((t) => {
-    let a = null; try { a = JSON.parse(t.call.match(/\[(.*)\]/s)[0])[0]; } catch { /* leave empty */ }
-    if (!a) return '';
-    const n = (v) => `<span class="n">${Number(v).toFixed(3)}</span>`;
-    return `<span class="k">${ep.tool}</span> <span class="d">→</span> x ${n(a.x)} y ${n(a.y)} z ${n(a.z)} <span class="d">· gripper ${a.gripper > 0 ? 'close' : 'open'} · ${t.n} targets</span>`;
-  });
-  for (const t of [T_JUMP, T_TURNS, T_END]) { const s = document.createElement('i'); s.className = 'track-seg'; s.style.left = (t / T_LOOP * 100) + '%'; el.track.appendChild(s); }
-  const dom = {};
-  const setDom = (k, v, fn) => { if (dom[k] !== v) { dom[k] = v; fn(v); } };
-  function paintDom(T) {
-    const phys = T >= T_CROSS + 0.25;
-    setDom('phase', phys, (v) => { el.phase.classList.toggle('phys', v); el.phase.lastElementChild.textContent = v ? 'Physical world' : 'Digital world'; });
-    setDom('vig', T < T_CROSS + 0.15, (v) => el.vig.classList.toggle('hide', !v));
-    const inTurns = T >= T_TURNS - 0.35;
-    setDom('show', inTurns, (v) => el.obs.classList.toggle('hide', !v));
-    setDom('turnv', inTurns && T < T_END + 1.3, (v) => el.turn.classList.toggle('hide', !v));
-    setDom('note', T >= T_END + 1.7, (v) => el.note.classList.toggle('hide', !v));
-    setDom('done', T >= T_END + 0.35, (v) => el.done.classList.toggle('hide', !v));
-    setDom('fill', Math.round(Math.min(1, T / T_LOOP) * 1000), (v) => { el.fill.style.width = v / 10 + '%'; el.track.setAttribute('aria-valuenow', Math.round(v / 10)); });
-    if (!inTurns) return;
-    const tt = Math.max(0, T - T_TURNS), k = Math.min(N_TURNS - 1, Math.floor(tt / TURN)), local = T >= T_END ? TURN : tt - k * TURN, turn = ep.turns[k];
-    setDom('k', k, (v) => { el.k.textContent = v + 1; el.obsImg.src = obsImgs[v].src; });
-    const first = turn.reasoning.split(/(?<=\.)\s/).slice(0, 2).join(' ');
-    const chars = Math.floor(first.length * clamp(local / (THINK * CALL_AT)));
-    setDom('reason', k * 10000 + chars, () => { el.reason.textContent = first.slice(0, chars); });
-    const called = local >= THINK * CALL_AT, exec = local >= THINK, fin = local >= THINK + EXEC * 0.85;
-    setDom('call', k * 2 + (called ? 1 : 0), () => { el.call.innerHTML = called ? callHTML[k] : ''; });
-    setDom('ph', k * 4 + (fin ? 3 : exec ? 2 : called ? 1 : 0), () => { el.ph.textContent = fin ? 'observing' : exec ? 'controller executing' : called ? 'tool call' : 'reasoning'; });
-  }
+  const { el, paintDom } = makeOverlay(ep, obsImgs);
 
   // ---------- per-frame evaluation ----------
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), v3 = new THREE.Vector3(), q1 = new THREE.Quaternion(), q2 = new THREE.Quaternion(), zAxis = new THREE.Vector3(0, 0, 1), ctrl = new THREE.Vector3(), camP0 = new THREE.Vector3(), look = new THREE.Vector3(), up = new THREE.Vector3(0, 0, 1), jumpEnd = new THREE.Vector3(), jumpCtl = new THREE.Vector3(), p0 = new THREE.Vector3();
   const bez = (u, a, b, c, out) => out.set((1 - u) * (1 - u) * a.x + 2 * u * (1 - u) * b.x + u * u * c.x, (1 - u) * (1 - u) * a.y + 2 * u * (1 - u) * b.y + u * u * c.y, (1 - u) * (1 - u) * a.z + 2 * u * (1 - u) * b.z + u * u * c.z);
   ctrl.copy(scrCenter).lerp(seat0, 0.5).addScaledVector(up, 0.3).addScaledVector(nrm, 0.1);
+  const LOOPL = window.__heroLoop || 0;   // set only by the offline renderer: seconds after which the idle segment repeats exactly
   function evaluate(T) {
+    let idl = 0; if (LOOPL && T > T_LOOP) { idl = T - T_LOOP; T = T_LOOP; }   // freeze everything else at the film's last frame
     const aspect = camera.aspect, tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
 
     // ===== scene A =====
@@ -643,7 +615,7 @@ async function main() {
       lookZ = -0.55 + 0.5 * Math.max(0, Math.sin(T * 0.9)); lookY = 0.5 * Math.sin(T * 0.6);
       if (tk >= 0) { const b = bump((T - tc) / 0.34); hop = 0.016 * b; sq *= 1 + 0.08 * b - 0.1 * bump((T - tc + 0.12) / 0.12); }
       else if (T >= T_END) { const w = T - T_END - 0.25; if (w > 0) { joy = lerp(1, 0.45, smooth((w - 2.6) / 1.2)); lookZ = 0.3; lookY = 0; if (w < 2.4) { const b = Math.abs(Math.sin(w * Math.PI / 0.6)); hop = 0.05 * b; sq *= 0.9 + 0.2 * b; turn = easeIO(w / 1.2) * 2 * Math.PI; } else turn = 0; } }
-      const id = T - T_LOOP;
+      const id = LOOPL ? idl : T - T_LOOP;
       if (id > 0) {
         const P = 5.2, n = Math.floor(id / P), c = id - n * P, on = smooth(id / 1.2), big = n % 3 === 2;
         const h1 = bump((c - 1.6) / 0.5), h2 = big ? bump((c - 2.16) / 0.5) : 0, h = Math.max(h1, h2);
@@ -652,6 +624,7 @@ async function main() {
         joy = Math.max(joy, 0.45 + 0.5 * h);
         lookY = on * 0.6 * Math.sin(id * 0.7); lookZ = 0.3 + on * 0.18 * Math.sin(id * 0.43 + 1);
         turn = on * 0.3 * Math.sin(id * 0.55) + (big ? easeIO((c - 1.6) / 1.06) * 2 * Math.PI : 0);
+        if (LOOPL) { const w = 2 * Math.PI * id / LOOPL; lookY = 0.6 * Math.sin(2 * w); lookZ = 0.3 + 0.18 * Math.sin(w); turn = 0.3 * Math.sin(w) + (big ? easeIO((c - 1.6) / 1.06) * 2 * Math.PI : 0); blink = ((id + 2) % (LOOPL / 4)) < 0.12 ? 0.12 : 1; }
       }
       hero.quaternion.copy(pod.quaternion); hero.rotateZ(turn);
       // lean against the arm's motion, like a passenger
@@ -709,7 +682,7 @@ async function main() {
   new IntersectionObserver((es) => { visible = es[0].isIntersecting; last = performance.now(); }, { threshold: 0.05 }).observe(stage);
   document.addEventListener('visibilitychange', () => (last = performance.now()));
   syncBtn();
-  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches; let idle = 0, idleFlip = false;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches, held = qs.has('paused'); let idle = 0, idleFlip = false;   // ?paused pins the clock for frame-exact capture, so no idle drift there
   function tick(now) {
     requestAnimationFrame(tick);
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -717,7 +690,7 @@ async function main() {
     lastNow = now;
     if (!visible || document.hidden) return;
     if (playing && !drag) { const before = T; T += dt; if (before < T_END + 3.4 && T >= T_END + 3.4 && !endedOnce) { endedOnce = true; window.dispatchEvent(new Event('hero-ended')); } if (T >= T_LOOP) { T = T_LOOP - 0.001; playing = false; syncBtn(); } dirty = true; idle = 0; }
-    else if (!drag && !calm && T >= T_LOOP - 0.01) { idle += dt; if ((idleFlip = !idleFlip)) dirty = true; }
+    else if (!drag && !calm && !held && T >= T_LOOP - 0.01) { idle += dt; if ((idleFlip = !idleFlip)) dirty = true; }
     else idle = 0;
     if (!dirty) return; dirty = false;
     evaluate(T + idle); render();
